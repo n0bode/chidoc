@@ -1,0 +1,361 @@
+---
+openapi: 3.0.0
+info:
+  title: Lucree bancarizacao
+  version: 1.0.0
+  description: |
+    Introdução
+    modelo empregado é bastante simples: há uma
+    única URL (endpoint) que recebe dados via POST/GET e dependendo do formato do
+    JSON enviado, uma determinada operação é realizada.
+  x-logo:
+    url: "./static/logo.png"
+    background-color: "#FFFFFF"
+    altText: "Lucree"
+paths:
+  "/bancarizacao":
+    get:
+      summary: Bancariazacao
+      tags:
+      - bancarizacao
+      security:
+      - Token: []
+      requestBody:
+        description: Insira uns destes formatos
+        required: true
+        content:
+          application/json:
+            schema:
+              anyOf:
+              - "$ref": "#/components/schemas/ConsultaPeriodo"
+              - "$ref": "#/components/schemas/Consultar"
+      responses:
+        '200':
+          description: Sucesso
+    post:
+      summary: Bancariazacao
+      tags:
+      - bancarizacao
+      security:
+      - Token: []
+      requestBody:
+        description: Insira uns destes formatos
+        required: true
+        content:
+          application/json:
+            schema:
+              anyOf:
+              - "$ref": "#/components/schemas/Documento"
+              - "$ref": "#/components/schemas/ImportarOperacoes"
+      responses:
+        '201':
+          description: Sucesso
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/Retorno"
+components:
+  securitySchemes:
+    Token:
+      description: |
+        ## Gerar Token
+
+        Toda a autorização é feita pelo cognito então, para acessar a api é nessário que tenha um usuario e senha para a geração do token.
+
+        ```bash
+        curl -X POST -d '{
+          "username": "test",
+          "password": "test"
+        }' http://api.lucree.com.br/v1/autorizacao
+        ```
+        ## Header
+        ```bash
+        Authorization: $TOKEN
+        ```
+      type: http
+      scheme: bearer
+  schemas:
+    Documento:
+      type: object
+      description: Enviar documento
+      properties:
+        documento:
+          type: object
+          properties:
+            tipo_documento:
+              type: string
+              example: JPG
+            categoria:
+              type: string
+              example: '3'
+            operacao:
+              type: string
+              example: 012345679
+            base64:
+              type: string
+              format: binary
+    Consultar:
+      type: object
+      properties:
+        consultaroperacoes:
+          type: object
+          properties:
+            cod_operacao:
+              type: string
+              pattern: "^[0-9]*$"
+              example: 012345679
+    ConsultaPeriodo:
+      type: object
+      description: Consultar operações por data
+      properties:
+        consultaroperacoes:
+          type: object
+          properties:
+            data_inicio:
+              type: string
+              format: date
+            data_final:
+              type: string
+              format: date
+    Avalista:
+      type: object
+      properties:
+        nome_avalista:
+          type: string
+        cpf_avalista:
+          type: string
+        grau_parentesco:
+          type: string
+    Conta:
+      type: object
+      properties:
+        cod_banco:
+          type: string
+        conta:
+          type: string
+        contad:
+          type: string
+        agencia:
+          type: string
+        agenciad:
+          type: string
+        operacao:
+          type: string
+        conjunta:
+          type: string
+        tipo:
+          type: string
+        cpf_favorecido:
+          type: string
+          pattern: "^[0-9]*$"
+    Socio:
+      type: object
+      properties:
+        cpf_socio:
+          type: string
+          pattern: "^[0-9]*$"
+        nome_socio:
+          type: string
+    Vencimento:
+      type: object
+      properties:
+        data_vencimento:
+          type: string
+        saldo_devedor:
+          type: string
+        prazo_dias:
+          type: string
+        valor_parcela:
+          type: string
+        valor_principal:
+          type: string
+        valor_juros:
+          type: string
+        numero_documento:
+          type: string
+        valor_iof_parcela:
+          type: string
+        valor_tarifa_parcela:
+          type: string
+        capital_amortizado:
+          type: string
+    ImportarOperacoes:
+      type: object
+      description: Importar operações
+      properties:
+        importaroperacoes:
+          type: object
+          properties:
+            numero_ccb:
+              type: integer
+            data_aceite:
+              type: string
+              format: date
+            data_liberacao:
+              type: string
+              format: date
+            valor_total:
+              type: string
+            valor_iof:
+              type: string
+            taxa:
+              type: string
+            prazo:
+              type: string
+            modalidade:
+              type: string
+            periodicidade:
+              type: string
+            perc_iof:
+              type: string
+            data_primeiro_vencimento:
+              type: string
+              format: date
+            valor_parcela:
+              type: string
+            valor_tarifas:
+              type: string
+            tarifa_titulo:
+              type: string
+            tac:
+              type: string
+            perc_iof_adicional:
+              type: string
+            id_cliente:
+              type: string
+            cpfcnpj_cliente:
+              type: string
+            nome_cliente:
+              type: string
+            razao_social:
+              type: string
+            email_cliente:
+              type: string
+            endereco_cliente:
+              type: string
+            bairro_cliente:
+              type: string
+            cidade_cliente:
+              type: string
+            estado_cliente:
+              type: string
+            cep_cliente:
+              type: string
+            telefone_cliente:
+              type: string
+            receita_mes_01:
+              type: string
+            receita_mes_02:
+              type: string
+            receita_mes_03:
+              type: string
+            receita_mes_04:
+              type: string
+            receita_mes_05:
+              type: string
+            receita_mes_06:
+              type: string
+            receita_mes_07:
+              type: string
+            receita_mes_08:
+              type: string
+            receita_mes_09:
+              type: string
+            receita_mes_10:
+              type: string
+            receita_mes_11:
+              type: string
+            receita_mes_12:
+              type: string
+            tipo_documento:
+              type: string
+            escolaridade:
+              type: string
+            estado_civil:
+              type: string
+            tiporesidencia:
+              type: string
+            inscestadual:
+              type: string
+            rg:
+              type: string
+            orgaorg:
+              type: string
+            uf_orgaorg:
+              type: string
+            nacionalidade:
+              type: string
+            complemento:
+              type: string
+            nascimento:
+              type: string
+            sexo:
+              type: string
+            dtexprg:
+              type: string
+            naturalidade:
+              type: string
+            cpfconj:
+              type: string
+            nomeconjuge:
+              type: string
+            dtnascconjuge:
+              type: string
+            mae:
+              type: string
+            pai:
+              type: string
+            numdependentes:
+              type: string
+            fonecel:
+              type: string
+            numendereco:
+              type: string
+            temporesidencia:
+              type: string
+            vlaluguel:
+              type: string
+            tipo_endereco:
+              type: string
+            conta_bancaria:
+              "$ref": "#/components/schemas/Conta"
+            avalistas:
+              type: array
+              items:
+                "$ref": "#/components/schemas/Avalista"
+            socios:
+              type: array
+              items:
+                "$ref": "#/components/schemas/Socio"
+            vencimentos:
+              type: array
+              items:
+                "$ref": "#/components/schemas/Vencimento"
+    Retorno:
+      type: object
+      properties:
+        status_retorno:
+          type: string
+        msg_erro:
+          type: string
+        retorno:
+          type: object
+          properties:
+            cliente:
+              type: object
+              properties:
+                numero_ccb:
+                  type: string
+                  example: '6547751'
+                operacao:
+                  type: string
+                  example: '8287'
+                data_retorno:
+                  type: string
+                  format: date
+                cod_status:
+                  type: integer
+                  format: int32
+                descricao_retorno:
+                  type: string
+                  example: operacao
