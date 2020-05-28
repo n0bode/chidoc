@@ -2,6 +2,7 @@ package chidoc
 
 import (
 	"encoding/json"
+	"fmt"
 	"go/ast"
 	"go/parser"
 	"go/token"
@@ -159,7 +160,7 @@ func isArrType(t reflect.Type) bool {
 	return t.Kind() == reflect.Array || t.Kind() == reflect.Slice
 }
 
-func parseDefinition(m map[string]interface{}, t reflect.Type) map[string]interface{} {
+func parseDefinition(schemes, m map[string]interface{}, t reflect.Type) map[string]interface{} {
 	// if it was a pointer
 	if t.Kind() == reflect.Ptr {
 		t = t.Elem()
@@ -172,13 +173,21 @@ func parseDefinition(m map[string]interface{}, t reflect.Type) map[string]interf
 		m["type"] = "boolean"
 	case isArrType(t):
 		m["type"] = "array"
-		m["items"] = parseDefinition(make(map[string]interface{}), t.Elem())
+		m["items"] = parseDefinition(schemes, make(map[string]interface{}), t.Elem())
 	case t == reflect.TypeOf(time.Time{}):
 		m["type"] = "string"
 		m["format"] = "date-time"
 	case t.Kind() == reflect.Struct:
 		var req []string
 		props := make(map[string]interface{})
+
+		// Stop recursive
+		if _, exists := schemes[t.Name()]; exists {
+			fmt.Println("EXISTS +")
+			m["$ref"] = "#/components/schemes/" + t.Name()
+			break
+		}
+		schemes[t.Name()] = "not recursive here!"
 
 		for i := 0; i < t.NumField(); i++ {
 			f := t.Field(i)
@@ -197,7 +206,7 @@ func parseDefinition(m map[string]interface{}, t reflect.Type) map[string]interf
 				req = append(req)
 			}
 
-			ff := parseDefinition(make(map[string]interface{}), f.Type)
+			ff := parseDefinition(schemes, make(map[string]interface{}), f.Type)
 			props[name] = ff
 		}
 
@@ -211,6 +220,7 @@ func parseDefinition(m map[string]interface{}, t reflect.Type) map[string]interf
 		if len(req) != 0 {
 			m["required"] = req
 		}
+		schemes[t.Name()] = m
 	default:
 		m["type"] = t.Name()
 	}
@@ -228,9 +238,10 @@ func genRouteYAML(settings DocSettings, r *chi.Mux) (doc string, err error) {
 	if data, exists := settings["definitions"]; exists {
 		if defs, ok := data.([]interface{}); ok {
 			schemes := make(map[string]interface{})
-			for _, def := range defs {
-				t := reflect.TypeOf(def)
-				schemes[t.Name()] = parseDefinition(make(map[string]interface{}), t)
+			for _, d := range defs {
+				var t reflect.Type = reflect.TypeOf(d)
+				parseDefinition(schemes, make(map[string]interface{}), t)
+				fmt.Println("HERE " + t.Name())
 			}
 			components["schemes"] = schemes
 		}
@@ -262,7 +273,7 @@ func AddRouteDoc(root *chi.Mux, docpath string, settings DocSettings) error {
 		settings["openapi"] = "3.0.0"
 	}
 
-	var html string = replaceHTML(title.(string), docpath+"docs.yaml", settings)
+	var html string = replaceHTML(title.(string), docpath+"/docs.yaml", settings)
 	docs, err := genRouteYAML(settings, root)
 	if err != nil {
 		return err
