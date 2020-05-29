@@ -2,7 +2,6 @@ package chidoc
 
 import (
 	"encoding/json"
-	"fmt"
 	"go/ast"
 	"go/parser"
 	"go/token"
@@ -156,6 +155,10 @@ func isIntType(t reflect.Type) bool {
 	return t.Kind() >= reflect.Int && t.Kind() <= reflect.Uint64
 }
 
+func isFloatType(t reflect.Type) bool {
+	return t.Kind() >= reflect.Float32 && t.Kind() <= reflect.Float64
+}
+
 func isArrType(t reflect.Type) bool {
 	return t.Kind() == reflect.Array || t.Kind() == reflect.Slice
 }
@@ -169,6 +172,8 @@ func parseDefinition(schemes, m map[string]interface{}, t reflect.Type) map[stri
 	switch {
 	case isIntType(t):
 		m["type"] = "integer"
+	case isFloatType(t):
+		m["type"] = "number"
 	case t.Kind() == reflect.Bool:
 		m["type"] = "boolean"
 	case isArrType(t):
@@ -183,7 +188,6 @@ func parseDefinition(schemes, m map[string]interface{}, t reflect.Type) map[stri
 
 		// Stop recursive
 		if _, exists := schemes[t.Name()]; exists {
-			fmt.Println("EXISTS +")
 			m["$ref"] = "#/components/schemes/" + t.Name()
 			break
 		}
@@ -216,13 +220,13 @@ func parseDefinition(schemes, m map[string]interface{}, t reflect.Type) map[stri
 			m["properties"] = props
 		}
 
-		// Requireds fields
+		// Required fields
 		if len(req) != 0 {
 			m["required"] = req
 		}
 		schemes[t.Name()] = m
 	default:
-		m["type"] = t.Name()
+		m["type"] = "object"
 	}
 	return m
 }
@@ -241,7 +245,6 @@ func genRouteYAML(settings DocSettings, r *chi.Mux) (doc string, err error) {
 			for _, d := range defs {
 				var t reflect.Type = reflect.TypeOf(d)
 				parseDefinition(schemes, make(map[string]interface{}), t)
-				fmt.Println("HERE " + t.Name())
 			}
 			components["schemes"] = schemes
 		}
