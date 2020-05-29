@@ -176,6 +176,8 @@ func parseDefinition(schemes, m map[string]interface{}, t reflect.Type) map[stri
 	case isArrType(t):
 		m["type"] = "array"
 		m["items"] = parseDefinition(schemes, make(map[string]interface{}), t.Elem())
+	case t.Kind() == reflect.String:
+		m["type"] = "string"
 	case t == reflect.TypeOf(time.Time{}):
 		m["type"] = "string"
 		m["format"] = "date-time"
