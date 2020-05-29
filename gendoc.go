@@ -44,16 +44,13 @@ const (
 	`
 )
 
-// DocSettings dict to set up redoc
-type DocSettings map[string]interface{}
-
-func replaceHTML(title, url_docs string, settings DocSettings) string {
-	dumps, err := json.Marshal(settings["settings"])
+func replaceHTML(title, urlDocs string, settings *DocSettings) string {
+	dumps, err := json.Marshal(map[string]interface{}{})
 	if err != nil {
 		log.Print(err)
 		return ""
 	}
-	r := strings.NewReplacer("{title}", title, "{url_docs}", url_docs, "{settings}", string(dumps))
+	r := strings.NewReplacer("{title}", title, "{url_docs}", urlDocs, "{settings}", string(dumps))
 	return r.Replace(pageHTML)
 }
 
@@ -231,52 +228,40 @@ func parseDefinition(schemes, m map[string]interface{}, t reflect.Type) map[stri
 	return m
 }
 
-func genRouteYAML(settings DocSettings, r *chi.Mux) (doc string, err error) {
+func genRouteYAML(settings *DocSettings, r *chi.Mux) (doc string, err error) {
 	paths, err := walkRoute("", make(map[string]interface{}), make(map[string][]*ast.CommentGroup), r)
 	if err != nil {
 		return doc, err
 	}
 
-	components := make(map[string]interface{})
+	schemes := make(map[string]interface{})
+	for _, d := range settings.definitions {
+		var t reflect.Type = reflect.TypeOf(d)
+		parseDefinition(schemes, make(map[string]interface{}), t)
+	}
+	settings.Set("components.schemes", schemes)
 
-	if data, exists := settings["definitions"]; exists {
-		if defs, ok := data.([]interface{}); ok {
-			schemes := make(map[string]interface{})
-			for _, d := range defs {
-				var t reflect.Type = reflect.TypeOf(d)
-				parseDefinition(schemes, make(map[string]interface{}), t)
-			}
-			components["schemes"] = schemes
+	auths := make(map[string]interface{})
+	for _, a := range settings.auths {
+		if err = a.Decode(auths); err != nil {
+			return doc, err
 		}
-		delete(settings, "definitions")
+	}
+	settings.Set("components.securitySchemes", auths)
+	settings.Set("paths", paths)
+
+	raw := make(map[string]interface{})
+	if err = settings.Decode(raw); err != nil {
+		return doc, err
 	}
 
-	if security, exists := settings["security"]; exists {
-		components["securitySchemes"] = security
-		delete(settings, "security")
-	}
-
-	settings["components"] = components
-
-	settings["paths"] = paths
-	buffer, err := yaml.Marshal(settings)
+	buffer, err := yaml.Marshal(raw)
 	return string(buffer), err
 }
 
 // AddRouteDoc adds documention to route
-func AddRouteDoc(root *chi.Mux, docpath string, settings DocSettings) error {
-
-	title, exists := settings["title"]
-	if exists {
-		// Remove title from settings
-		delete(settings, "title")
-	}
-
-	if _, exists := settings["openapi"]; !exists {
-		settings["openapi"] = "3.0.0"
-	}
-
-	var html string = replaceHTML(title.(string), docpath+"/docs.yaml", settings)
+func AddRouteDoc(root *chi.Mux, docpath string, settings *DocSettings) error {
+	var html string = replaceHTML(settings.Title, docpath+"/docs.yaml", settings)
 	docs, err := genRouteYAML(settings, root)
 	if err != nil {
 		return err
