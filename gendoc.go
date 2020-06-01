@@ -5,7 +5,6 @@ import (
 	"go/ast"
 	"go/parser"
 	"go/token"
-	"log"
 	"net/http"
 	"reflect"
 	"runtime"
@@ -47,7 +46,6 @@ const (
 func replaceHTML(title, urlDocs string, settings *DocSettings) string {
 	dumps, err := json.Marshal(map[string]interface{}{})
 	if err != nil {
-		log.Print(err)
 		return ""
 	}
 	r := strings.NewReplacer("{title}", title, "{url_docs}", urlDocs, "{settings}", string(dumps))
@@ -74,7 +72,7 @@ func routeDescription(handler http.Handler, tmp map[string][]*ast.CommentGroup) 
 		fset := token.NewFileSet()
 		parse, err := parser.ParseFile(fset, filename, nil, parser.ParseComments)
 		if err != nil {
-			log.Fatal(err)
+			return nil, err
 		}
 		tmp[filename] = parse.Comments
 		comments = parse.Comments
@@ -236,6 +234,7 @@ func genRouteYAML(settings *DocSettings, r *chi.Mux) (doc string, err error) {
 		return doc, err
 	}
 
+	// Parse definitions to YAML
 	schemes := make(map[string]interface{})
 	for _, d := range settings.definitions {
 		var t reflect.Type = reflect.TypeOf(d)
@@ -243,6 +242,7 @@ func genRouteYAML(settings *DocSettings, r *chi.Mux) (doc string, err error) {
 	}
 	settings.Set("components.schemes", schemes)
 
+	// Parse authorization to YAML
 	auths := make(map[string]interface{})
 	for _, a := range settings.auths {
 		if err = a.Decode(auths); err != nil {
@@ -269,10 +269,12 @@ func AddRouteDoc(root *chi.Mux, docpath string, settings *DocSettings) error {
 		return err
 	}
 
+	// Create page index
 	root.Get(docpath, func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte(html))
 	})
 
+	// Create route for docs generation
 	root.Get(docpath+"/docs.yaml", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Add("Content-Type", "text/x-yaml")
 		w.Write([]byte(docs))
