@@ -2,7 +2,6 @@ package chidoc
 
 import (
 	"errors"
-	"fmt"
 	"strings"
 )
 
@@ -39,7 +38,6 @@ func decodeSetPath(ptr map[string]interface{}, rawPath string, value interface{}
 	paths = paths[:len(paths)-1]
 	for len(paths) > 0 {
 		var path string = paths[0]
-		fmt.Println(path)
 		// pop array
 		paths = paths[1:]
 

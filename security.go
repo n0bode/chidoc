@@ -47,6 +47,7 @@ func NewAuthBasic(name, description string) Auth {
 	return Auth{
 		Name:        name,
 		Description: description,
+		Type:        AuthBasic,
 	}
 }
 

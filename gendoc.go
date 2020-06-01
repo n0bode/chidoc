@@ -269,15 +269,13 @@ func AddRouteDoc(root *chi.Mux, docpath string, settings *DocSettings) error {
 		return err
 	}
 
-	root.Route(docpath, func(route chi.Router) {
-		route.Get("/", func(w http.ResponseWriter, r *http.Request) {
-			w.Write([]byte(html))
-		})
+	root.Get(docpath, func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte(html))
+	})
 
-		route.Get("/docs.yaml", func(w http.ResponseWriter, r *http.Request) {
-			w.Header().Add("Content-Type", "text/x-yaml")
-			w.Write([]byte(docs))
-		})
+	root.Get(docpath+"/docs.yaml", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Add("Content-Type", "text/x-yaml")
+		w.Write([]byte(docs))
 	})
 	return nil
 }
