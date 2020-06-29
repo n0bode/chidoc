@@ -28,7 +28,13 @@ var htmls = map[DocRender]string{
 			<script type="module" src="https://unpkg.com/rapidoc/dist/rapidoc-min.js"></script>
 		</head>
 		<body>
-			<rapi-doc spec-url=".{url_docs}" theme="dark" render-style="read"> </rapi-doc>
+			<rapi-doc 
+				spec-url=".{url_docs}" 
+				theme="dark" 
+				render-style="read"
+				show-header="false"
+				show-info="false"
+			> </rapi-doc>
 		</body>
 	`,
 	"redoc": `
