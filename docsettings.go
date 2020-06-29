@@ -2,21 +2,38 @@ package chidoc
 
 import (
 	"errors"
+	"image"
 	"strings"
+)
+
+// HandlerImage is a handle to get a png image
+type HandlerImage func() image.Image
+
+type DocRender string
+
+const (
+	RedocRender DocRender = "redoc"
+	RapidRender DocRender = "rapid"
 )
 
 type DocSettings struct {
 	Title       string
 	Description string
 	Version     string
+	Render      DocRender
+
+	handlerIcon HandlerImage
+	handlerLogo HandlerImage
+
 	definitions []interface{}
 	valuesPath  map[string]interface{}
 	auths       []Auth
 }
 
-func NewDocSettings(title string) *DocSettings {
+func NewDocSettings(title string, render DocRender) *DocSettings {
 	return &DocSettings{
 		Title:       title,
+		Render:      render,
 		definitions: make([]interface{}, 0),
 		valuesPath:  make(map[string]interface{}),
 		auths:       make([]Auth, 0),
@@ -25,7 +42,7 @@ func NewDocSettings(title string) *DocSettings {
 
 func decodeSetPath(ptr map[string]interface{}, rawPath string, value interface{}) (err error) {
 	// in a near future, make a function to decode rawPath, instead of split
-	// cos, rawPath is dirt, it may YAML undefined character
+	// cos, rawPath is dirt, it may contains YAML undefined character
 	var paths []string = strings.Split(rawPath, ".")
 
 	if len(paths) == 0 {
@@ -56,6 +73,16 @@ func decodeSetPath(ptr map[string]interface{}, rawPath string, value interface{}
 	//Set field value
 	ptr[field] = value
 	return err
+}
+
+// SetLogo gets icon for documentation
+func (s *DocSettings) SetIcon(handler HandlerImage) {
+	s.handlerIcon = handler
+}
+
+// SetLogo gets logo for documentation
+func (s *DocSettings) SetLogo(handler HandlerImage) {
+	s.handlerLogo = handler
 }
 
 // SetDefinitions add model to openAPI YAML

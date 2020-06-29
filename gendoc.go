@@ -1,10 +1,14 @@
 package chidoc
 
 import (
+	"bytes"
 	"encoding/json"
+	"errors"
 	"go/ast"
 	"go/parser"
 	"go/token"
+	"image/png"
+	"io"
 	"net/http"
 	"reflect"
 	"runtime"
@@ -15,11 +19,22 @@ import (
 	"github.com/go-chi/chi"
 )
 
-const (
-	// PageHTML sad
-	pageHTML = `
+var htmls = map[DocRender]string{
+	"rapid": `
 		<head>
 			<title> {title} </title>
+			<link rel="icon" type="image/png" href="{url_docs}/favicon.png">
+			<!-- Include javascript redoc lib -->
+			<script type="module" src="https://unpkg.com/rapidoc/dist/rapidoc-min.js"></script>
+		</head>
+		<body>
+			<rapi-doc spec-url=".{url_docs}" theme="dark" render-style="read"> </rapi-doc>
+		</body>
+	`,
+	"redoc": `
+		<head>
+			<title> {title} </title>
+			<link rel="icon" type="image/png" href="{url_docs}/favicon.png">
 			<!-- Include javascript redoc lib -->
 			<script type="text/javascript" src="https://cdn.jsdelivr.net/npm/redoc@next/bundles/redoc.standalone.js"></script>
 		</head>
@@ -31,25 +46,20 @@ const (
 				Redoc.init(".{url_docs}", {settings}, document.getElementById("redoc_ui")); 
 			</script>
 		</body>
-	`
+	`,
+}
 
-	headerYAML = `
-	swagger: '3.0'
-	schemes:
-		- https
-		- http
-	info:
-		{info}
-	`
-)
-
-func replaceHTML(title, urlDocs string, settings *DocSettings) string {
+func replaceHTML(html, title, urlDocs string, settings *DocSettings) string {
 	dumps, err := json.Marshal(map[string]interface{}{})
 	if err != nil {
 		return ""
 	}
-	r := strings.NewReplacer("{title}", title, "{url_docs}", urlDocs, "{settings}", string(dumps))
-	return r.Replace(pageHTML)
+	r := strings.NewReplacer(
+		"{title}", title,
+		"{url_docs}", urlDocs,
+		"{settings}", string(dumps),
+	)
+	return r.Replace(html)
 }
 
 func splitFuncName(name string) string {
@@ -261,18 +271,50 @@ func genRouteYAML(settings *DocSettings, r *chi.Mux) (doc string, err error) {
 	return string(buffer), err
 }
 
+func readImage(handle HandlerImage, logo io.Writer) error {
+	if handle != nil {
+		image := handle()
+		return png.Encode(logo, image)
+	}
+	return errors.New("Handle is nil")
+}
+
 // AddRouteDoc adds documention to route
 func AddRouteDoc(root *chi.Mux, docpath string, settings *DocSettings) error {
-	var html string = replaceHTML(settings.Title, docpath+"/docs.yaml", settings)
-	docs, err := genRouteYAML(settings, root)
-	if err != nil {
-		return err
-	}
+	var urlDoc string = docpath + "/docs.yaml"
+
+	var html string = replaceHTML(htmls[settings.Render], settings.Title, urlDoc, settings)
 
 	// Create page index
 	root.Get(docpath, func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte(html))
 	})
+
+	// Read static logo
+	var logo bytes.Buffer
+	if err := readImage(settings.handlerLogo, &logo); err == nil {
+		// Set logo
+		settings.Set("info.x-logo.url", docpath+"/logo.png")
+		//Adds logo router
+		root.Get(docpath+"/logo.png", func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Add("Content-Type", "image/png")
+			w.Write(logo.Bytes())
+		})
+	}
+
+	// Read static icon
+	var icon bytes.Buffer
+	if err := readImage(settings.handlerIcon, &icon); err != nil {
+		root.Get(docpath+"/favicon.png", func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Add("Content-Type", "image/png")
+			w.Write(icon.Bytes())
+		})
+	}
+
+	docs, err := genRouteYAML(settings, root)
+	if err != nil {
+		return err
+	}
 
 	// Create route for docs generation
 	root.Get(docpath+"/docs.yaml", func(w http.ResponseWriter, r *http.Request) {
