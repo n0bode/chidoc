@@ -50,7 +50,7 @@ func main() {
 	// Here adds security
 	docSettings.SetAuths(chidoc.NewAuthBasic("auth", "this is a simple auth"))
 
-	if err := chidoc.AddRouteDoc(router, "", docSettings); err != nil {
+	if err := chidoc.AddRouteDoc(router, "/", docSettings); err != nil {
 		log.Fatal(err)
 	}
 

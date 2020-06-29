@@ -31,9 +31,10 @@ var htmls = map[DocRender]string{
 			<rapi-doc 
 				spec-url=".{url_docs}" 
 				theme="dark" 
-				render-style="read"
 				show-header="false"
 				show-info="false"
+				allow-server-selection="false"
+				render-style="read"
 			> </rapi-doc>
 		</body>
 	`,
@@ -119,10 +120,7 @@ func walkRoute(parent string, p map[string]interface{}, parseTMP map[string][]*a
 		if route.SubRoutes == nil {
 			doc := make(map[string]interface{})
 			for method, handler := range route.Handlers {
-				d, err := routeDescription(handler, parseTMP)
-				if err != nil {
-					return nil, err
-				}
+				d, _ := routeDescription(handler, parseTMP)
 				doc[strings.ToLower(method)] = d
 			}
 			p[path] = doc
@@ -287,8 +285,15 @@ func readImage(handle HandlerImage, logo io.Writer) error {
 
 // AddRouteDoc adds documention to route
 func AddRouteDoc(root *chi.Mux, docpath string, settings *DocSettings) error {
-	var urlDoc string = docpath + "/docs.yaml"
+	if len(docpath) == 0 {
+		return errors.New("Docpath cannot be empty")
+	}
 
+	if settings == nil {
+		return errors.New("DocSettings cannot be empty")
+	}
+
+	var urlDoc string = docpath + "/docs.yaml"
 	var html string = replaceHTML(htmls[settings.Render], settings.Title, urlDoc, settings)
 
 	// Create page index
