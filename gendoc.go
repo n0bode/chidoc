@@ -263,11 +263,13 @@ func parseDefinition(schemes, m map[string]interface{}, t reflect.Type) map[stri
 			if f.Anonymous {
 				continue
 			}
-			var name string = t.Name()
+			var name string = f.Name
 			aa := make(map[string]interface{})
 			tagJSON := parseTag(f.Tag.Get("json"))
-			if tagJSON["name"] != "-" {
-				name = tagJSON["name"]
+			name = tagJSON["name"]
+
+			if tagJSON["name"] == "-" {
+				continue
 			}
 
 			docs := parseTag(f.Tag.Get("docs"))

@@ -12,7 +12,8 @@ import (
 // Response
 type Response struct {
 	// doc uses json field with default tag
-	Message string `json:"message" docs:"description: Texto da resposta"`
+	Message   string     `json:"message" docs:"description: Texto da resposta"`
+	Responses []Response `json:"responses" docs:"description:Lista de respostas"`
 }
 
 // GETSay says hello for anyone
