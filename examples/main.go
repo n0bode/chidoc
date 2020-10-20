@@ -12,11 +12,13 @@ import (
 // Response
 type Response struct {
 	// doc uses json field with default tag
-	Message string `json:"message"`
+	Message string `json:"message" docs:"description: Texto da resposta"`
 }
 
 // GETSay says hello for anyone
 // summary: Endpoint to say hello world
+// security:
+// - Auth: []
 // responses:
 //  '200':
 //    description: It said hello world for you
@@ -46,11 +48,12 @@ func main() {
 	   "$ref": "#/components/schemes/HTTPResponse"
 	*/
 	docSettings.SetDefinitions(Response{})
+	docSettings.SetTheme(chidoc.DarkTheme)
 
 	// Here adds security
-	docSettings.SetAuths(chidoc.NewAuthBasic("auth", "this is a simple auth"))
+	docSettings.SetAuths(chidoc.NewAuthAPIKey("Auth", "Token", "Authorization", chidoc.InHeader))
 
-	if err := chidoc.AddRouteDoc(router, "/my-doc-path", docSettings); err != nil {
+	if err := chidoc.AddRouteDoc(router, "/", docSettings); err != nil {
 		log.Fatal(err)
 	}
 

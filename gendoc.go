@@ -20,15 +20,40 @@ import (
 )
 
 var htmls = map[DocRender]string{
-	"rapid": `
+	"rapidoc": `
 		<head>
 			<title> {title} </title>
 			<link rel="icon" type="image/png" href="{url_docs}/favicon.png">
 			<!-- Include javascript redoc lib -->
+			<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@300;600&amp;family=Open+Sans:wght@300;600&amp;family=Roboto+Mono&amp;display=swap" rel="stylesheet">
 			<script type="module" src="https://unpkg.com/rapidoc/dist/rapidoc-min.js"></script>
+
 		</head>
 		<body>
-			<rapi-doc spec-url=".{url_docs}" theme="dark" render-style="read"> </rapi-doc>
+			<rapi-doc 
+				spec-url=".{path}/{docs}" 
+				mono-font="{theme.fontname}" 
+				regular-font="{theme.fonttype}" 
+				text-color="{theme.textcolor}" 
+				bg-color="{theme.backgroundcolor}" 
+				theme="{theme.schema}" 
+				render-style="{theme.renderstyle}"
+				font-size="{theme.fontsize}"
+				show-header="{theme.header}"
+				primary-color="{theme.primarycolor}"
+				header-color="{theme.headercolor}"
+				schema-style="{theme.schematype}"
+				nav-bg-color="" 
+				nav-text-color="" 
+				nav-hover-bg-color="" 
+				nav-hover-text-color="" 
+				nav-accent-color=""
+			> 
+			<img 
+    			slot="nav-logo" 
+    			src=".{path}/{logo}"
+  			/> 
+			</rapi-doc>
 		</body>
 	`,
 	"redoc": `
@@ -43,21 +68,48 @@ var htmls = map[DocRender]string{
 			<div id="redoc_ui"></div>
 			<!-- Init redoc UI -->
 			<script type="text/javascript">
-				Redoc.init(".{url_docs}", {settings}, document.getElementById("redoc_ui")); 
+				Redoc.init(".{path}/{docs}", {settings}, document.getElementById("redoc_ui")); 
 			</script>
 		</body>
 	`,
 }
 
-func replaceHTML(html, title, urlDocs string, settings *DocSettings) string {
+func themeToList(prefix string, theme Theme) (arr []string) {
+	t := reflect.ValueOf(theme)
+	for i := 0; i < t.Type().NumField(); i++ {
+		f := t.Type().FieldByIndex([]int{i})
+		v := t.FieldByIndex([]int{i})
+		var key string = "{" + prefix + "." + strings.ToLower(f.Name) + "}"
+		if f.Tag.Get("doc") == "attribute" {
+			if v.IsZero() {
+				continue
+			}
+			arr = append(arr, key, "\""+f.Name+"\"=\""+v.String()+"\"")
+			continue
+		}
+		arr = append(arr, key, v.String())
+	}
+	return arr
+}
+
+func replaceHTML(html, title, path string, settings *DocSettings) string {
 	dumps, err := json.Marshal(map[string]interface{}{})
 	if err != nil {
 		return ""
 	}
-	r := strings.NewReplacer(
+
+	themeAtts := themeToList("theme", settings.Theme)
+
+	attrs := []string{
 		"{title}", title,
-		"{url_docs}", urlDocs,
+		"{path}", path,
+		"{logo}", "logo.png",
+		"{docs}", "docs.yaml",
 		"{settings}", string(dumps),
+	}
+
+	r := strings.NewReplacer(
+		append(attrs, themeAtts...)...,
 	)
 	return r.Replace(html)
 }
@@ -99,6 +151,12 @@ func routeDescription(handler http.Handler, tmp map[string][]*ast.CommentGroup) 
 	description := make(map[string]interface{})
 	if err := yaml.Unmarshal([]byte(data), &description); err != nil {
 		return nil, err
+	}
+
+	if description != nil {
+		if _, exists := description["tags"]; !exists {
+			description["tags"] = []string{}
+		}
 	}
 	return description, nil
 }
@@ -206,7 +264,7 @@ func parseDefinition(schemes, m map[string]interface{}, t reflect.Type) map[stri
 				continue
 			}
 			var name string = t.Name()
-
+			aa := make(map[string]interface{})
 			tagJSON := parseTag(f.Tag.Get("json"))
 			if tagJSON["name"] != "-" {
 				name = tagJSON["name"]
@@ -217,7 +275,10 @@ func parseDefinition(schemes, m map[string]interface{}, t reflect.Type) map[stri
 				req = append(req)
 			}
 
-			ff := parseDefinition(schemes, make(map[string]interface{}), f.Type)
+			if description, exists := docs["description"]; exists {
+				aa["description"] = description
+			}
+			ff := parseDefinition(schemes, aa, f.Type)
 			props[name] = ff
 		}
 
@@ -281,7 +342,7 @@ func readImage(handle HandlerImage, logo io.Writer) error {
 
 // AddRouteDoc adds documention to route
 func AddRouteDoc(root *chi.Mux, docpath string, settings *DocSettings) error {
-	var urlDoc string = docpath + "/docs.yaml"
+	var urlDoc string = docpath
 
 	var html string = replaceHTML(htmls[settings.Render], settings.Title, urlDoc, settings)
 

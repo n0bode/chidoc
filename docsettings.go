@@ -13,7 +13,7 @@ type DocRender string
 
 const (
 	RedocRender DocRender = "redoc"
-	RapidRender DocRender = "rapid"
+	RapidRender DocRender = "rapidoc"
 )
 
 type DocSettings struct {
@@ -21,6 +21,7 @@ type DocSettings struct {
 	Description string
 	Version     string
 	Render      DocRender
+	Theme       Theme
 
 	handlerIcon HandlerImage
 	handlerLogo HandlerImage
@@ -37,6 +38,7 @@ func NewDocSettings(title string, render DocRender) *DocSettings {
 		definitions: make([]interface{}, 0),
 		valuesPath:  make(map[string]interface{}),
 		auths:       make([]Auth, 0),
+		Theme:       DefaultTheme,
 	}
 }
 
@@ -93,6 +95,11 @@ func (s *DocSettings) SetDefinitions(def ...interface{}) {
 // SetAuths set all authorization for openapi
 func (s *DocSettings) SetAuths(auths ...Auth) {
 	s.auths = auths
+}
+
+// SetTheme set colors and style
+func (s *DocSettings) SetTheme(theme Theme) {
+	s.Theme = theme
 }
 
 // Set a value to openAPI YAML
