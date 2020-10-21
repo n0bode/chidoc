@@ -85,7 +85,7 @@ func main() {
 
 	// Create doc settings
 	// doc settings is a struct to generate YAML format for Redoc
-	docSettings := chidoc.NewDocSettings("Title for API", chidoc.RedocRender)
+	docSettings := chidoc.NewDocSettings("Title for API", chidoc.RapidRender)
 	// Here, you set up models, that you gonna use documention, like
 	/*
 	  schema:
@@ -97,7 +97,7 @@ func main() {
 	// Here adds security
 	docSettings.SetAuths(chidoc.NewAuthAPIKey("Auth", "Token", "Authorization", chidoc.InHeader))
 
-	if err := chidoc.AddRouteDoc(router, "/", docSettings); err != nil {
+	if err := chidoc.AddRouteDoc(router, "/docs", docSettings); err != nil {
 		log.Fatal(err)
 	}
 

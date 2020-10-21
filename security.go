@@ -39,6 +39,7 @@ func NewAuthAPIKey(name, description, parameter string, inType InType) Auth {
 		Description:   description,
 		ParameterName: parameter,
 		Type:          AuthAPIKey,
+		In:            inType,
 	}
 }
 
@@ -48,6 +49,7 @@ func NewAuthBasic(name, description string) Auth {
 		Name:        name,
 		Description: description,
 		Type:        AuthBasic,
+		In:          InHeader,
 	}
 }
 

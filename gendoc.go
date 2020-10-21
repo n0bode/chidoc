@@ -23,15 +23,14 @@ var htmls = map[DocRender]string{
 	"rapidoc": `
 		<head>
 			<title> {title} </title>
-			<link rel="icon" type="image/png" href="{url_docs}/favicon.png">
+			<link rel="icon" type="image/png" href="{url_icon}">
 			<!-- Include javascript redoc lib -->
 			<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@300;600&amp;family=Open+Sans:wght@300;600&amp;family=Roboto+Mono&amp;display=swap" rel="stylesheet">
 			<script type="module" src="https://unpkg.com/rapidoc/dist/rapidoc-min.js"></script>
-
 		</head>
 		<body>
 			<rapi-doc 
-				spec-url=".{path}/{docs}" 
+				spec-url=".{url_docs}" 
 				mono-font="{theme.fontname}" 
 				regular-font="{theme.fonttype}" 
 				text-color="{theme.textcolor}" 
@@ -51,7 +50,7 @@ var htmls = map[DocRender]string{
 			> 
 			<img 
     			slot="nav-logo" 
-    			src=".{path}/{logo}"
+    			src=".{url_logo}"
   			/> 
 			</rapi-doc>
 		</body>
@@ -59,7 +58,7 @@ var htmls = map[DocRender]string{
 	"redoc": `
 		<head>
 			<title> {title} </title>
-			<link rel="icon" type="image/png" href="{url_docs}/favicon.png">
+			<link rel="icon" type="image/png" href="{url_icon}">
 			<!-- Include javascript redoc lib -->
 			<script type="text/javascript" src="https://cdn.jsdelivr.net/npm/redoc@next/bundles/redoc.standalone.js"></script>
 		</head>
@@ -68,7 +67,7 @@ var htmls = map[DocRender]string{
 			<div id="redoc_ui"></div>
 			<!-- Init redoc UI -->
 			<script type="text/javascript">
-				Redoc.init(".{path}/{docs}", {settings}, document.getElementById("redoc_ui")); 
+				Redoc.init(".{url_docs}", {settings}, document.getElementById("redoc_ui")); 
 			</script>
 		</body>
 	`,
@@ -103,8 +102,9 @@ func replaceHTML(html, title, path string, settings *DocSettings) string {
 	attrs := []string{
 		"{title}", title,
 		"{path}", path,
-		"{logo}", "logo.png",
-		"{docs}", "docs.yaml",
+		"{url_logo}", joinPath(path, "logo.png"),
+		"{url_icon}", joinPath(path, "favicon.ico"),
+		"{url_docs}", joinPath(path, "docs.yaml"),
 		"{settings}", string(dumps),
 	}
 
@@ -155,7 +155,7 @@ func routeDescription(handler http.Handler, tmp map[string][]*ast.CommentGroup) 
 
 	if description != nil {
 		if _, exists := description["tags"]; !exists {
-			description["tags"] = []string{}
+			description["tags"] = []string{"API"}
 		}
 	}
 	return description, nil
@@ -373,7 +373,7 @@ func genRouteYAML(settings *DocSettings, r *chi.Mux) (doc string, err error) {
 	settings.Set("paths", paths)
 	settings.Set("tags", [](interface{}){
 		map[string]interface{}{
-			"name": "api",
+			"name": "API",
 		},
 	})
 	raw := make(map[string]interface{})
@@ -391,6 +391,14 @@ func readImage(handle HandlerImage, logo io.Writer) error {
 		return png.Encode(logo, image)
 	}
 	return errors.New("Handle is nil")
+}
+
+func joinPath(p0, p1 string) string {
+	l := len(p0)
+	if p0[l-1] == '/' {
+		return p0 + p1
+	}
+	return p0 + "/" + p1
 }
 
 // AddRouteDoc adds documention to route
@@ -413,9 +421,9 @@ func AddRouteDoc(root *chi.Mux, docpath string, settings *DocSettings) error {
 	var logo bytes.Buffer
 	if err := readImage(settings.handlerLogo, &logo); err == nil {
 		// Set logo
-		settings.Set("info.x-logo.url", docpath+"/logo.png")
+		settings.Set("info.x-logo.url", joinPath(docpath, "logo.png"))
 		//Adds logo router
-		root.Get(docpath+"/logo.png", func(w http.ResponseWriter, r *http.Request) {
+		root.Get(joinPath(docpath, "logo.png"), func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Add("Content-Type", "image/png")
 			w.Write(logo.Bytes())
 		})
@@ -424,14 +432,14 @@ func AddRouteDoc(root *chi.Mux, docpath string, settings *DocSettings) error {
 	// Read static icon
 	var icon bytes.Buffer
 	if err := readImage(settings.handlerIcon, &icon); err != nil {
-		root.Get(docpath+"/favicon.png", func(w http.ResponseWriter, r *http.Request) {
+		root.Get(joinPath(docpath, "favicon.png"), func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Add("Content-Type", "image/png")
 			w.Write(icon.Bytes())
 		})
 	}
 
 	// Create route for docs generation
-	root.Get(docpath+"/docs.yaml", func(w http.ResponseWriter, r *http.Request) {
+	root.Get(joinPath(docpath, "docs.yaml"), func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Add("Content-Type", "text/x-yaml")
 		w.Write([]byte(docs))
 	})
