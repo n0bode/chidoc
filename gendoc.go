@@ -161,12 +161,46 @@ func routeDescription(handler http.Handler, tmp map[string][]*ast.CommentGroup) 
 	return description, nil
 }
 
+func parseRoutePattern(pattern string) (string, []map[string]interface{}) {
+	var sub int = strings.LastIndex(pattern, "/")
+	var name string = pattern[sub+1:]
+
+	if len(name) == 0 || name[0] != '{' {
+		return pattern, nil
+	}
+
+	var index int = strings.Index(name, ":")
+	if index < 0 {
+		return pattern, nil
+	}
+
+	name = name[1:index]
+	params := make([]map[string]interface{}, 0)
+	params = append(params, map[string]interface{}{
+		"in":       "path",
+		"name":     name,
+		"required": true,
+		"schema": map[string]interface{}{
+			"type":   "integer",
+			"format": "int64",
+		},
+	})
+
+	return pattern[0:sub+1] + "{" + name + "}", params
+}
+
 func walkRoute(parent string, p map[string]interface{}, parseTMP map[string][]*ast.CommentGroup, r chi.Routes) (map[string]interface{}, error) {
 	for _, route := range r.Routes() {
-		var pattern string = route.Pattern
+		pattern, params := parseRoutePattern(route.Pattern)
+
+		if strings.HasSuffix(pattern, "favicon.png") {
+			continue
+		}
+
 		if strings.HasSuffix(pattern, "/*") {
 			pattern = pattern[:len(pattern)-2]
 		}
+
 		var path string = parent + pattern
 		if route.SubRoutes == nil {
 			doc := make(map[string]interface{})
@@ -174,6 +208,11 @@ func walkRoute(parent string, p map[string]interface{}, parseTMP map[string][]*a
 				d, err := routeDescription(handler, parseTMP)
 				if err != nil {
 					return nil, err
+				}
+
+				// add parameters
+				if params != nil {
+					d["parameters"] = params
 				}
 				doc[strings.ToLower(method)] = d
 			}
@@ -186,6 +225,10 @@ func walkRoute(parent string, p map[string]interface{}, parseTMP map[string][]*a
 	return p, nil
 }
 
+// parseTag parse format docs:"description: TITLE,required" to
+// map[string]string
+// 	descritption: " TITLE"
+//	required: ""
 func parseTag(tag string) (m map[string]string) {
 	var token string
 	var key string = "name"
@@ -214,18 +257,22 @@ func parseTag(tag string) (m map[string]string) {
 	return
 }
 
+// isIntType checks if type is a interger
 func isIntType(t reflect.Type) bool {
 	return t.Kind() >= reflect.Int && t.Kind() <= reflect.Uint64
 }
 
+// isFloatType checks if type is a number
 func isFloatType(t reflect.Type) bool {
 	return t.Kind() >= reflect.Float32 && t.Kind() <= reflect.Float64
 }
 
+// isArrType checks if type is a arr
 func isArrType(t reflect.Type) bool {
 	return t.Kind() == reflect.Array || t.Kind() == reflect.Slice
 }
 
+// parseDefinitions parse definition models for a map[Type]
 func parseDefinition(schemes, m map[string]interface{}, t reflect.Type) map[string]interface{} {
 	// if it was a pointer
 	if t.Kind() == reflect.Ptr {
@@ -251,7 +298,7 @@ func parseDefinition(schemes, m map[string]interface{}, t reflect.Type) map[stri
 		var req []string
 		props := make(map[string]interface{})
 
-		// Stop recursive
+		// Stop recursivePlug 'fatih/vim-go', { 'do': ':GoUpdateBinaries' }
 		if _, exists := schemes[t.Name()]; exists {
 			m["$ref"] = "#/components/schemes/" + t.Name()
 			break
@@ -324,7 +371,11 @@ func genRouteYAML(settings *DocSettings, r *chi.Mux) (doc string, err error) {
 	}
 	settings.Set("components.securitySchemes", auths)
 	settings.Set("paths", paths)
-
+	settings.Set("tags", [](interface{}){
+		map[string]interface{}{
+			"name": "api",
+		},
+	})
 	raw := make(map[string]interface{})
 	if err = settings.Decode(raw); err != nil {
 		return doc, err
@@ -347,6 +398,11 @@ func AddRouteDoc(root *chi.Mux, docpath string, settings *DocSettings) error {
 	var urlDoc string = docpath
 
 	var html string = replaceHTML(htmls[settings.Render], settings.Title, urlDoc, settings)
+
+	docs, err := genRouteYAML(settings, root)
+	if err != nil {
+		return err
+	}
 
 	// Create page index
 	root.Get(docpath, func(w http.ResponseWriter, r *http.Request) {
@@ -372,11 +428,6 @@ func AddRouteDoc(root *chi.Mux, docpath string, settings *DocSettings) error {
 			w.Header().Add("Content-Type", "image/png")
 			w.Write(icon.Bytes())
 		})
-	}
-
-	docs, err := genRouteYAML(settings, root)
-	if err != nil {
-		return err
 	}
 
 	// Create route for docs generation
