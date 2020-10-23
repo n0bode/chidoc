@@ -163,26 +163,28 @@ func routeDescription(handler http.Handler, tmp map[string][]*ast.CommentGroup) 
 
 func parseRoutePattern(pattern string) (string, []map[string]interface{}) {
 	var sub int = strings.LastIndex(pattern, "/")
-	var name string = pattern[sub+1:]
+	var subName string = pattern[sub+1:]
 
-	if len(name) == 0 || name[0] != '{' {
+	if len(subName) == 0 || subName[0] != '{' {
 		return pattern, nil
 	}
 
-	var index int = strings.Index(name, ":")
+	var index int = strings.Index(subName, ":")
 	if index < 0 {
 		return pattern, nil
 	}
 
-	name = name[1:index]
+	var name string = subName[1:index]
+	var format string = subName[index+1 : len(subName)-1]
+
 	params := make([]map[string]interface{}, 0)
 	params = append(params, map[string]interface{}{
 		"in":       "path",
 		"name":     name,
 		"required": true,
 		"schema": map[string]interface{}{
-			"type":   "integer",
-			"format": "int64",
+			"type":   "string",
+			"format": format,
 		},
 	})
 
@@ -387,8 +389,10 @@ func genRouteYAML(settings *DocSettings, r *chi.Mux) (doc string, err error) {
 
 func readImage(handle HandlerImage, logo io.Writer) error {
 	if handle != nil {
-		image := handle()
-		return png.Encode(logo, image)
+		if err := png.Encode(logo, handle()); err != nil {
+			return err
+		}
+		return nil
 	}
 	return errors.New("Handle is nil")
 }
@@ -407,6 +411,9 @@ func AddRouteDoc(root *chi.Mux, docpath string, settings *DocSettings) error {
 
 	var html string = replaceHTML(htmls[settings.Render], settings.Title, urlDoc, settings)
 
+	// set logo swagger
+	settings.Set("info.x-logo.url", joinPath(docpath, "logo.png"))
+
 	docs, err := genRouteYAML(settings, root)
 	if err != nil {
 		return err
@@ -419,9 +426,9 @@ func AddRouteDoc(root *chi.Mux, docpath string, settings *DocSettings) error {
 
 	// Read static logo
 	var logo bytes.Buffer
-	if err := readImage(settings.handlerLogo, &logo); err == nil {
+	err = readImage(settings.handlerLogo, &logo)
+	if err == nil {
 		// Set logo
-		settings.Set("info.x-logo.url", joinPath(docpath, "logo.png"))
 		//Adds logo router
 		root.Get(joinPath(docpath, "logo.png"), func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Add("Content-Type", "image/png")

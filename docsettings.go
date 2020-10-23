@@ -2,12 +2,8 @@ package chidoc
 
 import (
 	"errors"
-	"image"
 	"strings"
 )
-
-// HandlerImage is a handle to get a png image
-type HandlerImage func() image.Image
 
 type DocRender string
 
