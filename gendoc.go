@@ -162,33 +162,37 @@ func routeDescription(handler http.Handler, tmp map[string][]*ast.CommentGroup) 
 }
 
 func parseRoutePattern(pattern string) (string, []map[string]interface{}) {
-	var sub int = strings.LastIndex(pattern, "/")
-	var subName string = pattern[sub+1:]
-
-	if len(subName) == 0 || subName[0] != '{' {
-		return pattern, nil
-	}
-
-	var index int = strings.Index(subName, ":")
-	if index < 0 {
-		return pattern, nil
-	}
-
-	var name string = subName[1:index]
-	var format string = subName[index+1 : len(subName)-1]
-
 	params := make([]map[string]interface{}, 0)
-	params = append(params, map[string]interface{}{
-		"in":       "path",
-		"name":     name,
-		"required": true,
-		"schema": map[string]interface{}{
-			"type":   "string",
-			"format": format,
-		},
-	})
+	var path string
 
-	return pattern[0:sub+1] + "{" + name + "}", params
+	for _, subName := range strings.Split(pattern[1:], "/") {
+		if subName[0] != '{' || subName[len(subName)-1] != '}' {
+			path += "/" + subName
+			continue
+		}
+
+		var index int = strings.Index(subName, ":")
+		if index < 0 {
+			path += "/" + subName
+			continue
+		}
+
+		var name string = subName[1:index]
+		var format string = subName[index+1 : len(subName)-1]
+
+		params = append(params, map[string]interface{}{
+			"in":       "path",
+			"name":     name,
+			"required": true,
+			"schema": map[string]interface{}{
+				"type":   "string",
+				"format": format,
+			},
+		})
+
+		path += "/{" + name + "}"
+	}
+	return path, params
 }
 
 func walkRoute(parent string, p map[string]interface{}, parseTMP map[string][]*ast.CommentGroup, r chi.Routes) (map[string]interface{}, error) {
