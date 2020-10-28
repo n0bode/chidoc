@@ -51,8 +51,6 @@ var htmls = map[DocRender]string{
 			<img 
     			slot="nav-logo" 
 				src=".{url_logo}"
-				width="180"
-				height="180"
   			/> 
 			</rapi-doc>
 		</body>
@@ -128,15 +126,19 @@ func infoFunc(handler http.Handler) (name, filename string, line int) {
 	return splitFuncName(funcPC.Name()), filename, line
 }
 
-func routeDescription(handler http.Handler, tmp map[string][]*ast.CommentGroup) (map[string]interface{}, error) {
+func routeDescription(handler http.Handler, tmp map[string][]*ast.CommentGroup) (description map[string]interface{}, err error) {
 	fname, filename, _ := infoFunc(handler)
+
+	// default tag API
+	description = make(map[string]interface{})
+	description["tags"] = []string{"API"}
 
 	comments, exists := tmp[filename]
 	if !exists {
 		fset := token.NewFileSet()
 		parse, err := parser.ParseFile(fset, filename, nil, parser.ParseComments)
 		if err != nil {
-			return nil, err
+			return description, err
 		}
 		tmp[filename] = parse.Comments
 		comments = parse.Comments
@@ -150,9 +152,12 @@ func routeDescription(handler http.Handler, tmp map[string][]*ast.CommentGroup) 
 		data = "#" + group.Text()
 	}
 
-	description := make(map[string]interface{})
+	if data == "" {
+		return description, nil
+	}
+
 	if err := yaml.Unmarshal([]byte(data), &description); err != nil {
-		return nil, err
+		return description, err
 	}
 
 	if description != nil {
@@ -163,9 +168,12 @@ func routeDescription(handler http.Handler, tmp map[string][]*ast.CommentGroup) 
 	return description, nil
 }
 
-func parseRoutePattern(pattern string) (string, []map[string]interface{}) {
-	params := make([]map[string]interface{}, 0)
-	var path string
+func parseRoutePattern(pattern string) (path string, params []PathArg) {
+	params = make([]PathArg, 0)
+
+	if strings.Index(pattern[1:], "/") < 0 {
+		return pattern, params
+	}
 
 	for _, subName := range strings.Split(pattern[1:], "/") {
 		if len(subName) == 0 || subName[0] != '{' || subName[len(subName)-1] != '}' {
@@ -182,13 +190,13 @@ func parseRoutePattern(pattern string) (string, []map[string]interface{}) {
 		var name string = subName[1:index]
 		var format string = subName[index+1 : len(subName)-1]
 
-		params = append(params, map[string]interface{}{
-			"in":       "path",
-			"name":     name,
-			"required": true,
-			"schema": map[string]interface{}{
-				"type":   "string",
-				"format": format,
+		params = append(params, PathArg{
+			In:       "path",
+			Name:     name,
+			Required: true,
+			Schema: PathArgType{
+				Kind:   "string",
+				Format: format,
 			},
 		})
 
@@ -199,22 +207,28 @@ func parseRoutePattern(pattern string) (string, []map[string]interface{}) {
 
 func walkRoute(parent string, p map[string]interface{}, parseTMP map[string][]*ast.CommentGroup, r chi.Routes) (map[string]interface{}, error) {
 	for _, route := range r.Routes() {
-		pattern, params := parseRoutePattern(route.Pattern)
+		var rawPath string = parent + route.Pattern
+		path, params := parseRoutePattern(parent + route.Pattern)
 
-		if strings.HasSuffix(pattern, "favicon.png") {
+		if strings.HasSuffix(path, "favicon.png") {
 			continue
 		}
 
-		if strings.HasSuffix(pattern, "/*") {
-			pattern = pattern[:len(pattern)-2]
+		if strings.HasSuffix(path, "/*") {
+			path = path[:len(path)-2]
+			rawPath = rawPath[:len(rawPath)-2]
 		}
 
-		var path string = parent + pattern
+		//var path string = parent + pattern
 		if route.SubRoutes == nil {
 			doc := make(map[string]interface{})
 			for method, handler := range route.Handlers {
+				if method == "" {
+					continue
+				}
+
 				d, err := routeDescription(handler, parseTMP)
-				if err != nil || d == nil {
+				if err != nil {
 					return nil, err
 				}
 
@@ -227,7 +241,7 @@ func walkRoute(parent string, p map[string]interface{}, parseTMP map[string][]*a
 			p[path] = doc
 			continue
 		}
-		walkRoute(path, p, parseTMP, route.SubRoutes)
+		walkRoute(rawPath, p, parseTMP, route.SubRoutes)
 	}
 
 	return p, nil
