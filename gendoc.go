@@ -285,7 +285,9 @@ func parseTag(tag string) (m map[string]string) {
 				key = token
 				token = ""
 			}
-			m[key] = token
+			if token != "" {
+				m[key] = token
+			}
 			key = ""
 			continue
 		}
@@ -315,6 +317,24 @@ func isArrType(t reflect.Type) bool {
 	return t.Kind() == reflect.Array || t.Kind() == reflect.Slice
 }
 
+func typeName(obj interface{}) string {
+	t := reflect.TypeOf(obj)
+
+	switch {
+	case isIntType(t):
+		return "integer"
+	case isFloatType(t):
+		return "number"
+	case t.Kind() == reflect.Bool:
+		return "boolean"
+	case isArrType(t):
+		return "array"
+	case t.Kind() == reflect.Struct:
+		return "object"
+	}
+	return "string"
+}
+
 // parseDefinitions parse definition models for a map[Type]
 func parseDefinition(schemes, m map[string]interface{}, t reflect.Type) map[string]interface{} {
 	// if it was a pointer
@@ -341,7 +361,7 @@ func parseDefinition(schemes, m map[string]interface{}, t reflect.Type) map[stri
 		var req []string
 		props := make(map[string]interface{})
 
-		// Stop recursivePlug 'fatih/vim-go', { 'do': ':GoUpdateBinaries' }
+		// Stop recusive
 		if _, exists := schemes[t.Name()]; exists {
 			m["$ref"] = "#/components/schemes/" + t.Name()
 			break
@@ -353,10 +373,14 @@ func parseDefinition(schemes, m map[string]interface{}, t reflect.Type) map[stri
 			if f.Anonymous {
 				continue
 			}
-			var name string = f.Name
+
+			var name string = strings.ToLower(string(f.Name[0])) + f.Name[1:]
 			aa := make(map[string]interface{})
 			tagJSON := parseTag(f.Tag.Get("json"))
-			name = tagJSON["name"]
+
+			if nameTag, hasName := tagJSON["name"]; hasName {
+				name = nameTag
+			}
 
 			if tagJSON["name"] == "-" {
 				continue
@@ -370,6 +394,13 @@ func parseDefinition(schemes, m map[string]interface{}, t reflect.Type) map[stri
 			if description, exists := docs["description"]; exists {
 				aa["description"] = description
 			}
+
+			if enum, isEnum := docs["enum"]; isEnum {
+				aa["$ref"] = "#/components/schemes/" + enum + "Enum"
+				props[name] = aa
+				continue
+			}
+
 			ff := parseDefinition(schemes, aa, f.Type)
 			props[name] = ff
 		}
@@ -401,6 +432,11 @@ func genRouteYAML(settings *DocSettings, r *chi.Mux) (doc string, err error) {
 	schemes := make(map[string]interface{})
 	for _, d := range settings.definitions {
 		var t reflect.Type = reflect.TypeOf(d)
+
+		if s, ok := d.(StructEnum); ok {
+			schemes[s.Name+"Enum"] = s.Parse()
+			continue
+		}
 		parseDefinition(schemes, make(map[string]interface{}), t)
 	}
 	settings.Set("components.schemes", schemes)

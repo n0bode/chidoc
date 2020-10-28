@@ -30,6 +30,7 @@ type User struct {
 	Name     string `json:"name"`
 	Age      int    `json:"age"`
 	ParentID int64  `json:"parent_id"`
+	Weapon   int    `docs:"enum:Weapons"`
 }
 
 var data []User = []User{
@@ -177,7 +178,12 @@ func main() {
 	  schema:
 	   "$ref": "#/components/schemes/HTTPResponse"
 	*/
-	docSettings.SetDefinitions(Response{}, User{})
+	docSettings.SetDefinitions(Response{}, User{}, chidoc.Enum("Weapons", `
+	1 - Hammer
+	2 - Staff
+	3 - Sword
+	4 - Mace
+	`, 1, 2, 3, 4))
 	docSettings.SetTheme(chidoc.DarkTheme)
 
 	// Here adds security
