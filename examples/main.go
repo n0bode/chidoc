@@ -13,14 +13,68 @@ import (
 // Response
 type Response struct {
 	// doc uses json field with default tag
-	Message   string     `json:"message" docs:"description: Texto da resposta"`
-	Responses []Response `json:"responses" docs:"description:Lista de respostas"`
+	Message string      `json:"message,omitempty" docs:"description: Texto da resposta"`
+	Data    interface{} `json:"data" docs:"description:Data from request"`
+}
+
+func HTTPSuccess(w http.ResponseWriter, data interface{}) {
+	w.Header().Add("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(Response{
+		Data: data,
+	})
 }
 
 // User struct for users
 type User struct {
-	Name string `json:"name"`
-	Age  int    `json:"age"`
+	ID       int64  `json:"id"`
+	Name     string `json:"name"`
+	Age      int    `json:"age"`
+	ParentID int64  `json:"parent_id"`
+}
+
+var data []User = []User{
+	User{
+		ID:       1,
+		Name:     "Thror",
+		Age:      248,
+		ParentID: 0,
+	},
+	User{
+		ID:       2,
+		Name:     "Thrain",
+		Age:      206,
+		ParentID: 1,
+	},
+	User{
+		ID:       3,
+		Name:     "Thorin",
+		Age:      195,
+		ParentID: 2,
+	},
+	User{
+		ID:       4,
+		Name:     "Frerin",
+		Age:      48,
+		ParentID: 2,
+	},
+	User{
+		ID:       5,
+		Name:     "Dis",
+		Age:      200,
+		ParentID: 2,
+	},
+	User{
+		ID:       6,
+		Name:     "Kili",
+		Age:      200,
+		ParentID: 5,
+	},
+	User{
+		ID:       7,
+		Name:     "Fili",
+		Age:      200,
+		ParentID: 5,
+	},
 }
 
 // GETSay says hello for anyone
@@ -38,6 +92,36 @@ func GETSay(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(Response{
 		Message: "Hi! don't worry, it's running",
 	})
+}
+
+// GetChildren returns user's children
+// summary: get children by parent
+func GetChildren(w http.ResponseWriter, r *http.Request) {
+	var userID string = chi.URLParam(r, "userID")
+
+	var users []User
+	for _, user := range data {
+		if strconv.FormatInt(user.ParentID, 10) == userID {
+			users = append(users, user)
+		}
+	}
+	HTTPSuccess(w, users)
+}
+
+// GetChildrenByID returns user's children
+// summary: get children by parent
+func GetChildrenByID(w http.ResponseWriter, r *http.Request) {
+	var parentID string = chi.URLParam(r, "userID")
+	var userID string = chi.URLParam(r, "childrenID")
+
+	var users []User
+	for _, user := range data {
+		if strconv.FormatInt(user.ParentID, 10) == parentID && userID == strconv.FormatInt(user.ID, 10) {
+			users = append(users, user)
+		}
+	}
+
+	HTTPSuccess(w, users)
 }
 
 // GETUserByID gets user by id
@@ -81,11 +165,13 @@ func main() {
 	// ... API
 	router.Get("/api/say", GETSay)
 	router.Get("/api/user/{userID:[0-9]+}", GETUserByID)
+	router.Get("/api/user/{userID:[0-9]+}/children", GetChildren)
+	router.Get("/api/user/{userID:[0-9]+}/children/{childrenID:[0-9]+}", GetChildrenByID)
 	// ..
 
 	// Create doc settings
 	// doc settings is a struct to generate YAML format for Redoc
-	docSettings := chidoc.NewDocSettings("Title for API", chidoc.RedocRender)
+	docSettings := chidoc.NewDocSettings("Title for API", chidoc.RapidRender)
 	// Here, you set up models, that you gonna use documention, like
 	/*
 	  schema:
