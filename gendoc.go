@@ -168,7 +168,7 @@ func parseRoutePattern(pattern string) (string, []map[string]interface{}) {
 	var path string
 
 	for _, subName := range strings.Split(pattern[1:], "/") {
-		if subName[0] != '{' || subName[len(subName)-1] != '}' {
+		if len(subName) == 0 || subName[0] != '{' || subName[len(subName)-1] != '}' {
 			path += "/" + subName
 			continue
 		}
