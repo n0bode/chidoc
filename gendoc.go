@@ -50,7 +50,9 @@ var htmls = map[DocRender]string{
 			> 
 			<img 
     			slot="nav-logo" 
-    			src=".{url_logo}"
+				src=".{url_logo}"
+				width="180"
+				height="180"
   			/> 
 			</rapi-doc>
 		</body>
