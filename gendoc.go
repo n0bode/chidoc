@@ -205,6 +205,27 @@ func parseRoutePattern(pattern string) (path string, params []PathArg) {
 	return path, params
 }
 
+func appendPathParams(d map[string]interface{}, params []PathArg) (re []interface{}) {
+	re = make([]interface{}, 0)
+
+	for _, param := range params {
+		re = append(re, param)
+	}
+
+	parameters, exists := d["parameters"]
+	if !exists {
+		return re
+	}
+
+	arr, isArr := parameters.([]interface{})
+	if !isArr {
+		return re
+	}
+
+	re = append(re, arr...)
+	return re
+}
+
 func walkRoute(parent string, p map[string]interface{}, parseTMP map[string][]*ast.CommentGroup, r chi.Routes) (map[string]interface{}, error) {
 	for _, route := range r.Routes() {
 		var rawPath string = parent + route.Pattern
@@ -234,7 +255,7 @@ func walkRoute(parent string, p map[string]interface{}, parseTMP map[string][]*a
 
 				// add parameters
 				if params != nil {
-					d["parameters"] = params
+					d["parameters"] = appendPathParams(d, params)
 				}
 				doc[strings.ToLower(method)] = d
 			}
