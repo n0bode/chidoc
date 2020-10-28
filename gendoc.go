@@ -214,7 +214,7 @@ func walkRoute(parent string, p map[string]interface{}, parseTMP map[string][]*a
 			doc := make(map[string]interface{})
 			for method, handler := range route.Handlers {
 				d, err := routeDescription(handler, parseTMP)
-				if err != nil {
+				if err != nil || d == nil {
 					return nil, err
 				}
 
