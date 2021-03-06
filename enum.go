@@ -1,5 +1,6 @@
 package chidoc
 
+// StructEnum struct enum type documentation
 type StructEnum struct {
 	Name        string
 	Type        string
@@ -17,6 +18,7 @@ func Enum(name, description string, values ...interface{}) StructEnum {
 	}
 }
 
+// Parse converts structEnum to dict(enum)
 func (s StructEnum) Parse() map[string]interface{} {
 	m := make(map[string]interface{})
 	m["type"] = s.Type

@@ -441,6 +441,15 @@ func genRouteYAML(settings *DocSettings, r *chi.Mux) (doc string, err error) {
 	}
 	settings.Set("components.schemes", schemes)
 
+	// Set base path
+	if settings.BasePath != "" {
+		settings.Set("servers", []Server{
+			Server{
+				URL: settings.BasePath,
+			},
+		})
+	}
+
 	// Parse authorization to YAML
 	auths := make(map[string]interface{})
 	for _, a := range settings.auths {

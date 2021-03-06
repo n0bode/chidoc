@@ -8,11 +8,14 @@ const (
 	FontSizeLargest          = "largest"
 )
 
+// FontType const to define font type documentation render
 type FontType string
 
 const (
+	// FontTypeDefault default font for documentation
 	FontTypeDefault FontType = "Nunito"
-	FontTypeSans             = "Open Sans"
+	// FontTypeSans define open sans as font on documentation render
+	FontTypeSans = "Open Sans"
 )
 
 // Theme costumizer docs
