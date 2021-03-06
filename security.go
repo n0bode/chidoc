@@ -2,6 +2,7 @@ package chidoc
 
 import "errors"
 
+// AuthType const to know type of authorization documentation
 type AuthType string
 
 const (
@@ -13,6 +14,7 @@ const (
 	AuthOAuth2 = "oauth2"
 )
 
+// InType consts authorization input type
 type InType string
 
 const (
@@ -22,6 +24,7 @@ const (
 	InQuery = "query"
 )
 
+// Auth structs to define authorization documentation
 type Auth struct {
 	Name        string
 	Description string

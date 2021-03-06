@@ -5,17 +5,22 @@ import (
 	"strings"
 )
 
+// DocRender consts to define render available
 type DocRender string
 
 const (
+	// RedocRender redoc https://github.com/Redocly/redoc
 	RedocRender DocRender = "redoc"
+	// RapidRender RapidocRender https://mrin9.github.io/RapiDoc/
 	RapidRender DocRender = "rapidoc"
 )
 
+// DocSettings structs define documentation generation
 type DocSettings struct {
 	Title       string
 	Description string
 	Version     string
+	BasePath    string
 	Render      DocRender
 	Theme       Theme
 
@@ -27,6 +32,7 @@ type DocSettings struct {
 	auths       []Auth
 }
 
+// NewDocSettings creates a new documentation settings
 func NewDocSettings(title string, render DocRender) *DocSettings {
 	return &DocSettings{
 		Title:       title,
@@ -73,7 +79,7 @@ func decodeSetPath(ptr map[string]interface{}, rawPath string, value interface{}
 	return err
 }
 
-// SetLogo gets icon for documentation
+// SetIcon gets icon for documentation
 func (s *DocSettings) SetIcon(handler HandlerImage) {
 	s.handlerIcon = handler
 }
@@ -86,6 +92,11 @@ func (s *DocSettings) SetLogo(handler HandlerImage) {
 // SetDefinitions add model to openAPI YAML
 func (s *DocSettings) SetDefinitions(def ...interface{}) {
 	s.definitions = def
+}
+
+// SetBasePath set base path documention
+func (s *DocSettings) SetBasePath(basePath string) {
+	s.BasePath = basePath
 }
 
 // SetAuths set all authorization for openapi
