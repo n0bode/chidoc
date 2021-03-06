@@ -190,7 +190,7 @@ func main() {
 	docSettings.SetAuths(chidoc.NewAuthAPIKey("Auth", "Token", "Authorization", chidoc.InHeader))
 
 	docSettings.SetLogo(chidoc.ImageFromURL("https://i.imgur.com/7lZu0wq.png"))
-	if err := chidoc.AddRouteDoc(router, "/docs", docSettings); err != nil {
+	if err := chidoc.AddRouteDoc(router, "/", docSettings, "docs"); err != nil {
 		log.Fatal(err)
 	}
 
