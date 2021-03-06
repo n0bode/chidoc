@@ -488,17 +488,26 @@ func joinPath(p0, p1 string) string {
 	if p0[l-1] == '/' {
 		return p0 + p1
 	}
+
+	if p1[0] == '/' {
+		return p0 + p1
+	}
+
 	return p0 + "/" + p1
 }
 
 // AddRouteDoc adds documention to route
-func AddRouteDoc(root *chi.Mux, docpath string, settings *DocSettings) error {
+func AddRouteDoc(root *chi.Mux, docpath string, settings *DocSettings, paths ...string) error {
 	var urlDoc string = docpath
+
+	for _, path := range paths {
+		urlDoc = joinPath(urlDoc, path)
+	}
 
 	var html string = replaceHTML(htmls[settings.Render], settings.Title, urlDoc, settings)
 
 	// set logo swagger
-	settings.Set("info.x-logo.url", joinPath(docpath, "logo.png"))
+	settings.Set("info.x-logo.url", joinPath(urlDoc, "logo.png"))
 
 	docs, err := genRouteYAML(settings, root)
 	if err != nil {
@@ -516,7 +525,7 @@ func AddRouteDoc(root *chi.Mux, docpath string, settings *DocSettings) error {
 	if err == nil {
 		// Set logo
 		//Adds logo router
-		root.Get(joinPath(docpath, "logo.png"), func(w http.ResponseWriter, r *http.Request) {
+		root.Get(joinPath(urlDoc, "logo.png"), func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Add("Content-Type", "image/png")
 			w.Write(logo.Bytes())
 		})
@@ -525,14 +534,14 @@ func AddRouteDoc(root *chi.Mux, docpath string, settings *DocSettings) error {
 	// Read static icon
 	var icon bytes.Buffer
 	if err := readImage(settings.handlerIcon, &icon); err != nil {
-		root.Get(joinPath(docpath, "favicon.png"), func(w http.ResponseWriter, r *http.Request) {
+		root.Get(joinPath(urlDoc, "favicon.png"), func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Add("Content-Type", "image/png")
 			w.Write(icon.Bytes())
 		})
 	}
 
 	// Create route for docs generation
-	root.Get(joinPath(docpath, "docs.yaml"), func(w http.ResponseWriter, r *http.Request) {
+	root.Get(joinPath(urlDoc, "docs.yaml"), func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Add("Content-Type", "text/x-yaml")
 		w.Write([]byte(docs))
 	})
