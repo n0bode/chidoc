@@ -121,7 +121,7 @@ func splitFuncName(name string) string {
 
 	for i := len(arr) - 1; i >= 0; i-- {
 		var fname string = arr[i]
-		if strings.HasPrefix(fname, "func") {
+		if !strings.HasPrefix(fname, "func") {
 			return strings.Split(fname, "-")[0]
 		}
 	}
