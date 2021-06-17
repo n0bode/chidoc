@@ -14,6 +14,7 @@ import (
 	"runtime"
 	"strings"
 	"time"
+	"unicode"
 
 	"github.com/ghodss/yaml"
 	"github.com/go-chi/chi"
@@ -380,6 +381,11 @@ func parseDefinition(schemes, m map[string]interface{}, t reflect.Type) map[stri
 
 		for i := 0; i < t.NumField(); i++ {
 			f := t.Field(i)
+
+			if unicode.IsLower(rune(f.Name[0])) {
+				continue
+			}
+
 			if f.Anonymous {
 				inner := parseDefinition(schemes, map[string]interface{}{}, f.Type)
 				raw, exists := inner["properties"]
