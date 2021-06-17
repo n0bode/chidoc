@@ -51,6 +51,8 @@ var htmls = map[DocRender]string{
 			<img 
     			slot="nav-logo" 
 				src=".{url_logo}"
+				width="128"
+				height="128"
   			/> 
 			</rapi-doc>
 		</body>
@@ -116,7 +118,14 @@ func replaceHTML(html, title, path string, settings *DocSettings) string {
 
 func splitFuncName(name string) string {
 	var arr []string = strings.Split(name, ".")
-	return strings.Split(arr[len(arr)-1], "-")[0]
+
+	for i := len(arr) - 1; i >= 0; i-- {
+		var fname string = arr[i]
+		if strings.HasPrefix(fname, "func") {
+			return strings.Split(fname, "-")[0]
+		}
+	}
+	return ""
 }
 
 func infoFunc(handler http.Handler) (name, filename string, line int) {
@@ -150,6 +159,7 @@ func routeDescription(handler http.Handler, tmp map[string][]*ast.CommentGroup) 
 			continue
 		}
 		data = "#" + group.Text()
+		break
 	}
 
 	if data == "" {
@@ -371,6 +381,14 @@ func parseDefinition(schemes, m map[string]interface{}, t reflect.Type) map[stri
 		for i := 0; i < t.NumField(); i++ {
 			f := t.Field(i)
 			if f.Anonymous {
+				inner := parseDefinition(schemes, map[string]interface{}{}, f.Type)
+				raw, exists := inner["properties"]
+				if !exists {
+					continue
+				}
+				for k, v := range raw.(map[string]interface{}) {
+					props[k] = v
+				}
 				continue
 			}
 
@@ -378,12 +396,17 @@ func parseDefinition(schemes, m map[string]interface{}, t reflect.Type) map[stri
 			aa := make(map[string]interface{})
 			tagJSON := parseTag(f.Tag.Get("json"))
 
-			if nameTag, hasName := tagJSON["name"]; hasName {
-				name = nameTag
+			nameTag, hasName := tagJSON["name"]
+			if nameTag == "-" {
+				// overide last tag
+				if _, exists := props[name]; exists {
+					delete(props, name)
+				}
+				continue
 			}
 
-			if tagJSON["name"] == "-" {
-				continue
+			if hasName {
+				name = nameTag
 			}
 
 			docs := parseTag(f.Tag.Get("docs"))
