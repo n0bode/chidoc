@@ -371,6 +371,14 @@ func parseDefinition(schemes, m map[string]interface{}, t reflect.Type) map[stri
 		for i := 0; i < t.NumField(); i++ {
 			f := t.Field(i)
 			if f.Anonymous {
+				inner := parseDefinition(schemes, map[string]interface{}{}, f.Type)
+				raw, exists := inner["properties"]
+				if !exists {
+					continue
+				}
+				for k, v := range raw.(map[string]interface{}) {
+					props[k] = v
+				}
 				continue
 			}
 
