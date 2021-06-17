@@ -51,6 +51,8 @@ var htmls = map[DocRender]string{
 			<img 
     			slot="nav-logo" 
 				src=".{url_logo}"
+				width="128"
+				height="128"
   			/> 
 			</rapi-doc>
 		</body>
@@ -157,6 +159,7 @@ func routeDescription(handler http.Handler, tmp map[string][]*ast.CommentGroup) 
 			continue
 		}
 		data = "#" + group.Text()
+		break
 	}
 
 	if data == "" {
