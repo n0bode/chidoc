@@ -187,7 +187,7 @@ func main() {
 	docSettings.SetDefinitions(db.UserOrm{}, User{}, Response{})
 
 	// Here adds security
-	docSettings.SetAuths(chidoc.NewAuthAPIKey("Auth", "Token", "Authorization", chidoc.InHeader))
+	docSettings.SetAuths(chidoc.NewAuthBearer("Auth", "Token"))
 
 	docSettings.SetLogo(chidoc.ImageFromURL("https://i.imgur.com/7lZu0wq.png"))
 	if err := chidoc.AddRouteDoc(routes, "/", docSettings, "docs"); err != nil {

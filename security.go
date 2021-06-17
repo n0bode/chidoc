@@ -12,6 +12,8 @@ const (
 	AuthAPIKey = "apiKey"
 	// AuthOAuth2 for Authentication Auth2
 	AuthOAuth2 = "oauth2"
+	// AuthBearer for Authentication Bearer
+	AuthBearer = "http"
 )
 
 // InType consts authorization input type
@@ -22,6 +24,8 @@ const (
 	InHeader InType = "header"
 	// InQuery for APIKey authentication in URL query
 	InQuery = "query"
+	// InHttp for Bearer authentication in HTTP
+	InHttp = "http"
 )
 
 // Auth structs to define authorization documentation
@@ -56,6 +60,15 @@ func NewAuthBasic(name, description string) Auth {
 	}
 }
 
+// NewAuthBasic creates a security for Basic Authentication
+func NewAuthBearer(name, description string) Auth {
+	return Auth{
+		Name:        name,
+		Description: description,
+		Type:        AuthBearer,
+	}
+}
+
 // it's working, soon late
 //func NewAuthOAuth2()
 
@@ -83,6 +96,9 @@ func (a Auth) Decode(ptr map[string]interface{}) (err error) {
 		auth["in"] = a.In
 		auth["name"] = a.ParameterName
 		break
+	case AuthBearer:
+		auth["scheme"] = "bearer"
+		auth["bearerFormat"] = "jwt"
 	default:
 		return errors.New("SecurityType invalid")
 	}
