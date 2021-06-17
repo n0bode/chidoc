@@ -393,12 +393,17 @@ func parseDefinition(schemes, m map[string]interface{}, t reflect.Type) map[stri
 			aa := make(map[string]interface{})
 			tagJSON := parseTag(f.Tag.Get("json"))
 
-			if nameTag, hasName := tagJSON["name"]; hasName {
-				name = nameTag
+			nameTag, hasName := tagJSON["name"]
+			if nameTag == "-" {
+				// overide last tag
+				if _, exists := props[name]; exists {
+					delete(props, name)
+				}
+				continue
 			}
 
-			if tagJSON["name"] == "-" {
-				continue
+			if hasName {
+				name = nameTag
 			}
 
 			docs := parseTag(f.Tag.Get("docs"))
