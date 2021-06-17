@@ -116,7 +116,14 @@ func replaceHTML(html, title, path string, settings *DocSettings) string {
 
 func splitFuncName(name string) string {
 	var arr []string = strings.Split(name, ".")
-	return strings.Split(arr[len(arr)-1], "-")[0]
+
+	for i := len(arr) - 1; i >= 0; i-- {
+		var fname string = arr[i]
+		if strings.HasPrefix(fname, "func") {
+			return strings.Split(fname, "-")[0]
+		}
+	}
+	return ""
 }
 
 func infoFunc(handler http.Handler) (name, filename string, line int) {
