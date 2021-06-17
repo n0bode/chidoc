@@ -45,7 +45,7 @@ func HTTPError(w http.ResponseWriter, message string, status int) {
 // GetAllUsers gets all users in your app
 // summary: gets all users in your app
 // security:
-// - Auth: []
+// - oauth: []
 // responses:
 //  '200':
 //    description: Returns users by id
@@ -111,7 +111,7 @@ func PostUser(conn *db.DB) http.HandlerFunc {
 // PutUser update fields user
 // summary: updates fields user
 // security:
-// - Auth: []
+// - oauth: []
 // responses:
 //  '200':
 //    description: Updated user
@@ -164,8 +164,40 @@ func PutUser(conn *db.DB) http.HandlerFunc {
 	}
 }
 
+func PostToken(conn *db.DB) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		username, pass, ok := r.BasicAuth()
+		if !ok {
+			HTTPError(w, "unsupported_grant", 401)
+			return
+		}
+
+		users := conn.Filter(func(user db.UserOrm) (db.UserOrm, bool) {
+			if user.Username == username && user.Password == pass {
+				return user, false
+			}
+			return user, true
+		})
+
+		if len(users) == 0 {
+			HTTPError(w, "unsupported_grant", 401)
+			return
+		}
+
+		w.Header().Add("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"access_token":  "aaaabbbcc",
+			"refresh_token": "aaaabbbcca",
+			"token_type":    "Bearer",
+			"expires_in":    3600,
+		})
+	}
+}
+
 func Routes() *chi.Mux {
 	db := db.NewDB()
+
+	db.AddUser("admin", "admin", "Zeus", "zeus@olympus.com")
 
 	router := chi.NewRouter()
 
@@ -173,6 +205,7 @@ func Routes() *chi.Mux {
 	router.Get("/users", GetAllUsers(db))
 	router.Post("/users", PostUser(db))
 	router.Put("/users/{id:[0-9]+}", PutUser(db))
+	router.Post("/token", PostToken(db))
 
 	return router
 }
@@ -187,7 +220,10 @@ func main() {
 	docSettings.SetDefinitions(db.UserOrm{}, User{}, Response{})
 
 	// Here adds security
-	docSettings.SetAuths(chidoc.NewAuthBearer("Auth", "Token"))
+	docSettings.SetAuths(chidoc.NewAuthOAuth("oauth", "http://localhost:8000/token", "asd", map[string]string{
+		"Roles": "username to acessa page",
+		"Test":  "password user",
+	}))
 
 	docSettings.SetLogo(chidoc.ImageFromURL("https://i.imgur.com/7lZu0wq.png"))
 	if err := chidoc.AddRouteDoc(routes, "/", docSettings, "docs"); err != nil {

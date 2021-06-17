@@ -33,6 +33,8 @@ type Auth struct {
 	Name        string
 	Description string
 	Type        AuthType
+	Scopes      map[string]string
+	UrlAuth     string
 	// only case SecurityType was APIKey
 	In InType
 	// cnly APIKey
@@ -69,6 +71,17 @@ func NewAuthBearer(name, description string) Auth {
 	}
 }
 
+// NewOAuth
+func NewAuthOAuth(name, url, description string, scopes map[string]string) Auth {
+	return Auth{
+		Name:        name,
+		Description: description,
+		Scopes:      scopes,
+		Type:        AuthOAuth2,
+		UrlAuth:     url,
+	}
+}
+
 // it's working, soon late
 //func NewAuthOAuth2()
 
@@ -90,7 +103,13 @@ func (a Auth) Decode(ptr map[string]interface{}) (err error) {
 	case AuthBasic:
 		break
 	case AuthOAuth2:
-		// it's comming soon
+		auth["name"] = a.Name
+		auth["flows"] = map[string]interface{}{
+			"clientCredentials": map[string]interface{}{
+				"tokenUrl": a.UrlAuth,
+				"scopes":   a.Scopes,
+			},
+		}
 		break
 	case AuthAPIKey:
 		auth["in"] = a.In
