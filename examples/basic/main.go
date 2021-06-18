@@ -27,7 +27,7 @@ func HTTPSuccess(w http.ResponseWriter, data interface{}) {
 // User struct for users
 type User struct {
 	ID       int64  `json:"id"`
-	Name     string `json:"name"`
+	Name     string `json:"name" docs:"len:5,required"`
 	Age      int    `json:"age"`
 	ParentID int64  `json:"parent_id"`
 	Weapon   int    `docs:"enum:Weapons"`

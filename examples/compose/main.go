@@ -225,7 +225,7 @@ func main() {
 		"Test":  "password user",
 	}))
 
-	docSettings.SetLogo(chidoc.ImageFromURL("https://i.imgur.com/7lZu0wq.png"))
+	docSettings.SetLogo(chidoc.ImageFromURLScaled("https://i.imgur.com/7lZu0wq.png", 0.5))
 	if err := chidoc.AddRouteDoc(routes, "/", docSettings, "docs"); err != nil {
 		log.Fatal(err)
 	}

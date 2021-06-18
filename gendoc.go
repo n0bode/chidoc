@@ -292,12 +292,12 @@ func parseTag(tag string) (m map[string]string) {
 		if tag[i] == ',' {
 			if len(key) == 0 {
 				key = token
-				token = ""
 			}
 			if token != "" {
 				m[key] = token
 			}
 			key = ""
+			token = ""
 			continue
 		}
 
@@ -415,11 +415,22 @@ func parseDefinition(schemes, m map[string]interface{}, t reflect.Type) map[stri
 
 			docs := parseTag(f.Tag.Get("docs"))
 			if _, required := docs["required"]; required {
-				req = append(req)
+				req = append(req, name)
 			}
 
 			if description, exists := docs["description"]; exists {
 				aa["description"] = description
+			}
+
+			if length, exists := docs["len"]; exists {
+				index := strings.IndexByte(length, '-')
+				if index == -1 {
+					aa["minLength"] = length
+					aa["maxLength"] = length
+				} else {
+					aa["minLength"] = length[index+1:]
+					aa["maxLength"] = length[:index]
+				}
 			}
 
 			if enum, isEnum := docs["enum"]; isEnum {
