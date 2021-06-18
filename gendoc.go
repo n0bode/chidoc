@@ -428,8 +428,8 @@ func parseDefinition(schemes, m map[string]interface{}, t reflect.Type) map[stri
 					aa["minLength"] = length
 					aa["maxLength"] = length
 				} else {
-					aa["minLength"] = length[index+1:]
-					aa["maxLength"] = length[:index]
+					aa["minLength"] = length[:index]
+					aa["maxLength"] = length[index+1:]
 				}
 			}
 
