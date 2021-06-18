@@ -298,6 +298,7 @@ func parseTag(tag string) (m map[string]string) {
 				m[key] = token
 			}
 			key = ""
+			token = ""
 			continue
 		}
 
@@ -415,7 +416,7 @@ func parseDefinition(schemes, m map[string]interface{}, t reflect.Type) map[stri
 
 			docs := parseTag(f.Tag.Get("docs"))
 			if _, required := docs["required"]; required {
-				req = append(req)
+				req = append(req, name)
 			}
 
 			if description, exists := docs["description"]; exists {
