@@ -366,6 +366,12 @@ func parseDefinition(schemes, m map[string]interface{}, t reflect.Type) map[stri
 	case t == reflect.TypeOf(time.Time{}):
 		m["type"] = "string"
 		m["format"] = "date-time"
+	case t.Kind() == reflect.Map:
+		if t.Key().Kind() == reflect.Interface {
+			break
+		}
+		m["type"] = "object"
+		m["additionalProperties"] = parseDefinition(schemes, map[string]interface{}{}, t.Elem())
 	case t.Kind() == reflect.Struct:
 		var req []string
 		props := make(map[string]interface{})
@@ -440,6 +446,10 @@ func parseDefinition(schemes, m map[string]interface{}, t reflect.Type) map[stri
 			}
 
 			ff := parseDefinition(schemes, aa, f.Type)
+
+			if key, has := docs["key"]; has {
+				ff["additionalProperties"].(map[string]interface{})["description"] = key
+			}
 			props[name] = ff
 		}
 
