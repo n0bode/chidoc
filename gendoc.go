@@ -180,9 +180,9 @@ func routeDescription(handler http.Handler, tmp map[string][]*ast.CommentGroup) 
 func parseRoutePattern(pattern string) (path string, params []PathArg) {
 	params = make([]PathArg, 0)
 
-	if strings.Contains(pattern[1:], "/") {
+	/*if strings.Contains(pattern[1:], "/") {
 		return pattern, params
-	}
+	}*/
 
 	for _, subName := range strings.Split(pattern[1:], "/") {
 		if len(subName) == 0 || subName[0] != '{' || subName[len(subName)-1] != '}' {
