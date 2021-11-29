@@ -88,11 +88,11 @@ func NewAuthOAuth(name, url, description string, scopes map[string]string) Auth 
 // Decode security to opeanapi(YAML) parameters
 func (a Auth) Decode(ptr map[string]interface{}) (err error) {
 	if ptr == nil {
-		return errors.New("Ptr cannot be nil")
+		return errors.New("ptr cannot be nil")
 	}
 
 	if _, exists := ptr[a.Name]; exists {
-		return errors.New("Security already exists")
+		return errors.New("security already exists")
 	}
 
 	auth := make(map[string]interface{})
@@ -110,11 +110,9 @@ func (a Auth) Decode(ptr map[string]interface{}) (err error) {
 				"scopes":   a.Scopes,
 			},
 		}
-		break
 	case AuthAPIKey:
 		auth["in"] = a.In
 		auth["name"] = a.ParameterName
-		break
 	case AuthBearer:
 		auth["scheme"] = "bearer"
 		auth["bearerFormat"] = "jwt"

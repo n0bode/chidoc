@@ -17,7 +17,7 @@ import (
 	"unicode"
 
 	"github.com/ghodss/yaml"
-	"github.com/go-chi/chi"
+	"github.com/go-chi/chi/v5"
 )
 
 var htmls = map[DocRender]string{
@@ -180,7 +180,7 @@ func routeDescription(handler http.Handler, tmp map[string][]*ast.CommentGroup) 
 func parseRoutePattern(pattern string) (path string, params []PathArg) {
 	params = make([]PathArg, 0)
 
-	if strings.Index(pattern[1:], "/") < 0 {
+	if strings.Contains(pattern[1:], "/") {
 		return pattern, params
 	}
 
@@ -409,9 +409,7 @@ func parseDefinition(schemes, m map[string]interface{}, t reflect.Type) map[stri
 			nameTag, hasName := tagJSON["name"]
 			if nameTag == "-" {
 				// overide last tag
-				if _, exists := props[name]; exists {
-					delete(props, name)
-				}
+				delete(props, name)
 				continue
 			}
 
@@ -492,7 +490,7 @@ func genRouteYAML(settings *DocSettings, r *chi.Mux) (doc string, err error) {
 	// Set base path
 	if settings.BasePath != "" {
 		settings.Set("servers", []Server{
-			Server{
+			{
 				URL: settings.BasePath,
 			},
 		})
@@ -528,7 +526,7 @@ func readImage(handle HandlerImage, logo io.Writer) error {
 		}
 		return nil
 	}
-	return errors.New("Handle is nil")
+	return errors.New("handle is nil")
 }
 
 func joinPath(p0, p1 string) string {

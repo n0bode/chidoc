@@ -4,8 +4,8 @@ type FontSize string
 
 const (
 	FontSizeDefault FontSize = "default"
-	FontSizeLarge            = "large"
-	FontSizeLargest          = "largest"
+	FontSizeLarge   FontSize = "large"
+	FontSizeLargest FontSize = "largest"
 )
 
 // FontType const to define font type documentation render

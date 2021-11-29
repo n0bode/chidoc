@@ -7,7 +7,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/go-chi/chi"
+	"github.com/go-chi/chi/v5"
 	"github.com/n0bode/chidoc"
 	"github.com/n0bode/chidoc/examples/compose/db"
 )

@@ -50,7 +50,7 @@ func decodeSetPath(ptr map[string]interface{}, rawPath string, value interface{}
 	var paths []string = strings.Split(rawPath, ".")
 
 	if len(paths) == 0 {
-		return errors.New("Settings path cannot be empty")
+		return errors.New("settings path cannot be empty")
 	}
 
 	// removes the last elem, cos it's the field
