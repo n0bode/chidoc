@@ -27,7 +27,7 @@ var htmls = map[DocRender]string{
 			<link rel="icon" type="image/png" href="{url_icon}">
 			<!-- Include javascript redoc lib -->
 			<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@300;600&amp;family=Open+Sans:wght@300;600&amp;family=Roboto+Mono&amp;display=swap" rel="stylesheet">
-			<script type="module" src="https://mrin9.github.io/RapiDoc/rapidoc-min.js"></script>
+			<script type="module" src="https://unpkg.com/rapidoc/dist/rapidoc-min.js"></script>
 		</head>
 		<body>
 			<rapi-doc 
